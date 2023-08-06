@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+libc = "0.2.147"
 objc = "0.2.7"
 objc-foundation = "0.1.1"
 objc_id = "0.1.1"
+

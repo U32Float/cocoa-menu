@@ -1,42 +1,51 @@
-use objc::runtime::Object;
+use objc::sel_impl;
+use objc::{class, msg_send, runtime::Object};
+use objc_foundation::{INSString, NSString};
 use objc_id::Id;
 
+use crate::id;
 use crate::item::MenuItem;
 
 // ----------------------------------------------------------------------------
 
+#[derive(Clone)]
 pub struct Menu {
-    name: String,
+    title: String,
     items: Vec<MenuItem>,
 }
 
 impl Menu {
-    pub fn new(name: &str, items: Vec<MenuItem>) -> Self {
+    pub fn new(title: &str, items: Vec<MenuItem>) -> Self {
         Self {
-            name: name.to_string(),
+            title: title.to_string(),
             items,
         }
     }
 
-    pub fn push(&mut self, item: MenuItem) {
-        self.items.push(item);
+    pub fn add_item(&mut self, item: &MenuItem) {
+        self.items.push(item.clone());
     }
 
-    pub fn append(&mut self, mut items: Vec<MenuItem>) {
-        self.items.append(&mut items);
+    pub fn append_items(&mut self, items: &[MenuItem]) {
+        for item in items {
+            self.add_item(item);
+        }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
+    pub fn to_objc(&self) -> Id<Object> {
+        let menu_cls = class!(NSMenu);
 
-    pub fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
-    }
-}
+        let menu: id = unsafe {
+            let alloc: id = msg_send![menu_cls, alloc];
+            let title = NSString::from_str(&self.title);
+            msg_send![alloc, initWithTitle:&*title]
+        };
 
-impl Menu {
-    fn to_objc(&self) -> Id<Object> {
-        todo!()
+        for item in self.items.iter() {
+            let objc = item.to_objc();
+            let _: () = unsafe { msg_send![menu, addItem:&*objc] };
+        }
+
+        unsafe { Id::from_retained_ptr(menu) }
     }
 }
