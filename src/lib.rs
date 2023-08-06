@@ -1,16 +1,19 @@
 use objc::{class, sel_impl};
 use objc::{
     msg_send,
-    runtime::{self, Class},
+    runtime::{self},
 };
 
 #[macro_use(sel)]
 extern crate objc;
 
+#[cfg(target_os = "macos")]
 mod item;
 pub use item::MenuItem;
+#[cfg(target_os = "macos")]
 mod menu;
 pub use menu::Menu;
+#[cfg(target_os = "macos")]
 mod menubar;
 pub use menubar::MenuBar;
 
@@ -23,8 +26,20 @@ pub type id = *mut runtime::Object;
 pub const nil: id = 0 as id;
 
 /// Platform-specific.
+#[cfg(target_pointer_width = "32")]
+pub type NSInteger = libc::c_int;
+
+/// Platform-specific.
+#[cfg(target_pointer_width = "32")]
+pub type NSUInteger = libc::c_uint;
+
+/// Platform-specific.
 #[cfg(target_pointer_width = "64")]
 pub type NSInteger = libc::c_long;
+
+/// Platform-specific.
+#[cfg(target_pointer_width = "64")]
+pub type NSUInteger = libc::c_ulong;
 
 /// Activates a `MenuBar`.
 ///
@@ -34,13 +49,14 @@ pub type NSInteger = libc::c_long;
 ///
 /// # Warning
 /// - This will panic if no shared application exists.
-/// - If called before application is finished intializing, it will do nothing.
+/// - Does nothing if called before application is done initializing.
+#[cfg(target_os = "macos")]
 pub fn activate_menubar(menubar: &MenuBar) {
-    let cls = Class::get("NSApplication").unwrap();
+    let app_cls = class!(NSApplication);
     let item_cls = class!(NSMenuItem);
 
     unsafe {
-        let app: id = msg_send![cls, sharedApplication];
+        let app: id = msg_send![app_cls, sharedApplication];
 
         let main_menu: id = msg_send![app, mainMenu];
 
