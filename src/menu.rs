@@ -1,10 +1,11 @@
+use objc::runtime::NO;
 use objc::sel_impl;
 use objc::{class, msg_send, runtime::Object};
 use objc_foundation::{INSString, NSString};
 use objc_id::Id;
 
+use crate::id;
 use crate::item::MenuItem;
-use crate::{autorelease, id};
 
 // ----------------------------------------------------------------------------
 
@@ -32,7 +33,7 @@ impl Menu {
         }
     }
 
-    pub fn to_objc(&self) -> Id<Object> {
+    pub(crate) fn to_objc(&self) -> Id<Object> {
         let menu_cls = class!(NSMenu);
 
         unsafe {
@@ -41,6 +42,7 @@ impl Menu {
                 let title = NSString::from_str(&self.title);
                 msg_send![alloc, initWithTitle:&*title]
             };
+            let _: () = msg_send![menu, setAutoenablesItems: NO];
 
             for item in self.items.iter() {
                 let objc = item.to_objc();

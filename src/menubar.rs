@@ -15,10 +15,7 @@ impl MenuBar {
         }
     }
 
-    pub fn overwrite_main_menu(self, main_menu: Menu) -> Self {
-        Self {
-            main_menu: Some(main_menu),
-            ..self
-        }
+    pub fn main_menu(self, main_menu: Option<Menu>) -> Self {
+        Self { main_menu, ..self }
     }
 }

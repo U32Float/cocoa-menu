@@ -21,28 +21,28 @@ pub use menubar::MenuBar;
 // ----------------------------------------------------------------------------
 
 #[allow(non_camel_case_types)]
-pub type id = *mut runtime::Object;
+pub(crate) type id = *mut runtime::Object;
 
 #[allow(non_upper_case_globals)]
-pub const nil: id = 0 as id;
+pub(crate) const nil: id = 0 as id;
 
 /// Platform-specific.
 #[cfg(target_pointer_width = "32")]
-pub type NSInteger = libc::c_int;
+pub(crate) type NSInteger = libc::c_int;
 
 /// Platform-specific.
 #[cfg(target_pointer_width = "32")]
-pub type NSUInteger = libc::c_uint;
+pub(crate) type NSUInteger = libc::c_uint;
 
 /// Platform-specific.
 #[cfg(target_pointer_width = "64")]
-pub type NSInteger = libc::c_long;
+pub(crate) type NSInteger = libc::c_long;
 
 /// Platform-specific.
 #[cfg(target_pointer_width = "64")]
-pub type NSUInteger = libc::c_ulong;
+pub(crate) type NSUInteger = libc::c_ulong;
 
-pub unsafe fn autorelease<F, R>(f: F) -> R
+pub(crate) unsafe fn autorelease<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
