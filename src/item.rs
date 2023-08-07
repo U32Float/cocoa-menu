@@ -24,12 +24,14 @@ impl MenuItem {
                 let title = NSString::from_str(title);
                 let key = NSString::from_str("");
                 let item: id = msg_send![alloc, initWithTitle:&*title action:sel!(terminate:) keyEquivalent:&*key];
-                Id::from_retained_ptr(item)
+                let item: id = msg_send![item, autorelease];
+                Id::from_ptr(item)
             },
             MenuItem::SubMenu(menu) => unsafe {
                 let item: id = msg_send![item_cls, new];
+                let item: id = msg_send![item, autorelease];
                 let _: () = msg_send![item, setSubmenu:&*menu.to_objc()];
-                Id::from_retained_ptr(item)
+                Id::from_ptr(item)
             },
         }
     }

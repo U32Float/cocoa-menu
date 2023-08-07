@@ -1,3 +1,4 @@
+use objc::runtime::Object;
 use objc::{class, sel_impl};
 use objc::{
     msg_send,
@@ -41,6 +42,16 @@ pub type NSInteger = libc::c_long;
 #[cfg(target_pointer_width = "64")]
 pub type NSUInteger = libc::c_ulong;
 
+pub unsafe fn autorelease<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    let autorelease_pool: *mut Object = msg_send![class!(NSAutoreleasePool), new];
+    let ret = f();
+    let _: () = msg_send![autorelease_pool, release];
+    ret
+}
+
 /// Activates a `MenuBar`.
 ///
 /// # Info
@@ -56,29 +67,34 @@ pub fn activate_menubar(menubar: &MenuBar) {
     let item_cls = class!(NSMenuItem);
 
     unsafe {
-        let app: id = msg_send![app_cls, sharedApplication];
+        autorelease(|| {
+            let app: id = msg_send![app_cls, sharedApplication];
 
-        let main_menu: id = msg_send![app, mainMenu];
+            let main_menu: id = msg_send![app, mainMenu];
 
-        let num_items: NSInteger = msg_send![main_menu, numberOfItems];
+            let num_items: NSInteger = msg_send![main_menu, numberOfItems];
 
-        if menubar.main_menu.is_some() {
-            let _: () = msg_send![main_menu, removeAllItems];
+            if menubar.main_menu.is_some() {
+                let _: () = msg_send![main_menu, removeAllItems];
 
-            let item: id = msg_send![item_cls, new];
-            let _: () = msg_send![item, setSubmenu:&*menubar.main_menu.as_ref().unwrap().to_objc()];
-            let _: () = msg_send![main_menu, addItem: item];
-        } else {
-            // Remove all items except the main menu
-            for i in 1..num_items {
-                let _: () = msg_send![main_menu, removeItemAtIndex: i];
+                let item: id = msg_send![item_cls, new];
+                let item: id = msg_send![item, autorelease]; // Prevent memory leak
+                let _: () =
+                    msg_send![item, setSubmenu:&*menubar.main_menu.as_ref().unwrap().to_objc()];
+                let _: () = msg_send![main_menu, addItem: item];
+            } else {
+                // Remove all items except the main menu
+                for i in 1..num_items {
+                    let _: () = msg_send![main_menu, removeItemAtIndex: i];
+                }
             }
-        }
 
-        for menu in menubar.menus.iter() {
-            let item: id = msg_send![item_cls, new];
-            let _: () = msg_send![item, setSubmenu:&*menu.to_objc()];
-            let _: () = msg_send![main_menu, addItem: item];
-        }
+            for menu in menubar.menus.iter() {
+                let item: id = msg_send![item_cls, new];
+                let item: id = msg_send![item, autorelease]; // Prevent memory leak
+                let _: () = msg_send![item, setSubmenu:&*menu.to_objc()];
+                let _: () = msg_send![main_menu, addItem: item];
+            }
+        });
     }
 }
