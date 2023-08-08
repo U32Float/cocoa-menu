@@ -7,7 +7,7 @@ use objc::{msg_send, runtime::Object};
 use objc_foundation::{INSString, NSString};
 use objc_id::Id;
 
-use crate::{id, nil, Menu};
+use crate::{id, nil, Menu, Shortcut};
 
 // ----------------------------------------------------------------------------
 
@@ -51,9 +51,9 @@ impl MenuItem {
         }
     }
 
-    pub const fn button(title: String, action: Action, key: Option<Key>) -> Self {
+    pub const fn button(title: String, action: Action, shortcut: Option<Shortcut>) -> Self {
         Self {
-            item_type: MenuItemType::Button(title, action, key),
+            item_type: MenuItemType::Button(title, action, shortcut),
             enabled: true,
             hidden: false,
         }
@@ -89,7 +89,7 @@ impl MenuItem {
 enum MenuItemType {
     Dummy(String),
 
-    Button(String, Action, Option<Key>),
+    Button(String, Action, Option<Shortcut>),
 
     SubMenu(Menu),
 
@@ -120,12 +120,20 @@ impl MenuItemType {
                 let item: id = msg_send![item_cls, separatorItem];
                 Id::from_ptr(item)
             },
-            MenuItemType::Button(title, action, _key) => unsafe {
+            MenuItemType::Button(title, action, shortcut) => unsafe {
                 let alloc: id = msg_send![register_menu_item_class(), alloc];
 
                 let title = NSString::from_str(title);
-                let key = NSString::from_str(""); // TODO
+                let key = if let Some(shortcut) = shortcut {
+                    NSString::from_str(&shortcut.key.to_string())
+                } else {
+                    NSString::from_str("")
+                };
                 let item: id = msg_send![alloc, initWithTitle:&*title action: action.to_sel() keyEquivalent:&*key];
+
+                if let Some(shortcut) = shortcut {
+                    let _: () = msg_send![item, setKeyEquivalentModifierMask: shortcut.mask()];
+                }
 
                 if let Action::Callback(action) = action {
                     register_callback(item, action.clone());
@@ -175,9 +183,6 @@ impl Action {
         }
     }
 }
-
-#[derive(Clone)]
-pub enum Key {}
 
 // ----------------------------------------------------------------------------
 

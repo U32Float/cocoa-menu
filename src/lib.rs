@@ -10,7 +10,9 @@ extern crate objc;
 
 #[cfg(target_os = "macos")]
 mod item;
-pub use item::{Action, Key, MenuItem};
+pub use item::{Action, MenuItem};
+mod shortcut;
+pub use shortcut::{Key, Shortcut};
 #[cfg(target_os = "macos")]
 mod menu;
 pub use menu::Menu;
