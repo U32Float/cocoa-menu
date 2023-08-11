@@ -158,13 +158,13 @@ pub enum Action {
     ToggleFullScreen,
     Minimize,
     None,
-    Callback(Arc<dyn Fn() + 'static>),
+    Callback(Arc<dyn Fn() + Send + Sync + 'static>),
 }
 
 impl Action {
     pub fn callback<F>(f: F) -> Self
     where
-        F: Fn() + 'static,
+        F: Fn() + Send + Sync + 'static,
     {
         Self::Callback(Arc::new(f))
     }
