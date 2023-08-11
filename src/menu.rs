@@ -4,8 +4,8 @@ use objc::{class, msg_send, runtime::Object};
 use objc_foundation::{INSString, NSString};
 use objc_id::Id;
 
-use crate::id;
 use crate::item::MenuItem;
+use crate::{autorelease, id, nil, CGPoint};
 
 // ----------------------------------------------------------------------------
 
@@ -30,6 +30,26 @@ impl Menu {
     pub fn append_items(&mut self, items: &[MenuItem]) {
         for item in items {
             self.add_item(item);
+        }
+    }
+    /// Shows a popup of this menu at the current mouse position.
+    pub fn show_popup(&self) {
+        let pos: CGPoint = unsafe { msg_send![class!(NSEvent), mouseLocation] };
+        self.show_popup_at([pos.x as u32, pos.y as u32]);
+    }
+
+    /// Shows a popup of this menu at the given position.
+    pub fn show_popup_at(&self, position: [u32; 2]) {
+        let point = CGPoint {
+            x: position[0] as f64,
+            y: position[1] as f64,
+        };
+        unsafe {
+            autorelease(|| {
+                let menu = self.to_objc();
+                let _: () =
+                    msg_send![menu, popUpMenuPositioningItem:nil atLocation:point inView:nil];
+            })
         }
     }
 

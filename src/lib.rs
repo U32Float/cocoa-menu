@@ -44,6 +44,13 @@ pub(crate) type NSInteger = libc::c_long;
 #[cfg(target_pointer_width = "64")]
 pub(crate) type NSUInteger = libc::c_ulong;
 
+#[derive(Debug)]
+#[repr(C)]
+pub(crate) struct CGPoint {
+    pub x: f64,
+    pub y: f64,
+}
+
 pub(crate) unsafe fn autorelease<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
