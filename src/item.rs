@@ -7,15 +7,19 @@ use objc::{msg_send, runtime::Object};
 use objc_foundation::{INSString, NSString};
 use objc_id::Id;
 
-use crate::{id, nil, Menu, Shortcut};
+use crate::{id, nil, Image, Menu, Shortcut};
 
 // ----------------------------------------------------------------------------
-
 #[derive(Clone)]
 pub struct MenuItem {
     item_type: MenuItemType,
+
     enabled: bool,
     hidden: bool,
+
+    image_on: Option<Image>,
+    image_off: Option<Image>,
+    image_mixed: Option<Image>,
 }
 
 impl Default for MenuItem {
@@ -24,6 +28,9 @@ impl Default for MenuItem {
             item_type: MenuItemType::Dummy("default".into()),
             enabled: true,
             hidden: false,
+            image_on: None,
+            image_off: None,
+            image_mixed: None,
         }
     }
 }
@@ -33,6 +40,9 @@ impl MenuItem {
         item_type: MenuItemType::Separator,
         enabled: true,
         hidden: false,
+        image_on: None,
+        image_off: None,
+        image_mixed: None,
     };
 
     pub const fn dummy(title: String) -> Self {
@@ -40,6 +50,9 @@ impl MenuItem {
             item_type: MenuItemType::Dummy(title),
             enabled: true,
             hidden: false,
+            image_on: None,
+            image_off: None,
+            image_mixed: None,
         }
     }
 
@@ -48,6 +61,9 @@ impl MenuItem {
             item_type: MenuItemType::SubMenu(menu),
             enabled: true,
             hidden: false,
+            image_on: None,
+            image_off: None,
+            image_mixed: None,
         }
     }
 
@@ -56,15 +72,32 @@ impl MenuItem {
             item_type: MenuItemType::Button(title, action, shortcut),
             enabled: true,
             hidden: false,
+            image_on: None,
+            image_off: None,
+            image_mixed: None,
         }
     }
-
     pub fn enabled(self, enabled: bool) -> Self {
         Self { enabled, ..self }
     }
 
     pub fn hidden(self, hidden: bool) -> Self {
         Self { hidden, ..self }
+    }
+
+    pub fn image_on(self, image_on: Option<Image>) -> Self {
+        Self { image_on, ..self }
+    }
+
+    pub fn image_off(self, image_off: Option<Image>) -> Self {
+        Self { image_off, ..self }
+    }
+
+    pub fn image_mixed(self, image_mixed: Option<Image>) -> Self {
+        Self {
+            image_mixed,
+            ..self
+        }
     }
 
     pub(crate) fn to_objc(&self) -> Id<Object> {
@@ -76,6 +109,15 @@ impl MenuItem {
             }
             if self.hidden {
                 let _: () = msg_send![item, setHidden: YES];
+            }
+            if let Some(ref img_on) = self.image_on {
+                let _: () = msg_send![item, setOnStateImage: &img_on.0];
+            }
+            if let Some(ref img_off) = self.image_off {
+                let _: () = msg_send![item, setOffStateImage: &img_off.0];
+            }
+            if let Some(ref img_mixed) = self.image_mixed {
+                let _: () = msg_send![item, setMixedStateImage: &img_mixed.0];
             }
         }
 
