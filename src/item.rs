@@ -111,13 +111,13 @@ impl MenuItem {
                 let _: () = msg_send![item, setHidden: YES];
             }
             if let Some(ref img_on) = self.image_on {
-                let _: () = msg_send![item, setOnStateImage: &img_on.0];
+                let _: () = msg_send![item, setOnStateImage: img_on.clone()];
             }
             if let Some(ref img_off) = self.image_off {
-                let _: () = msg_send![item, setOffStateImage: &img_off.0];
+                let _: () = msg_send![item, setOffStateImage: img_off.clone()];
             }
             if let Some(ref img_mixed) = self.image_mixed {
-                let _: () = msg_send![item, setMixedStateImage: &img_mixed.0];
+                let _: () = msg_send![item, setMixedStateImage: img_mixed.clone()];
             }
         }
 
