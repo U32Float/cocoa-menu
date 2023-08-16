@@ -1,6 +1,9 @@
 use std::{ptr::NonNull, sync::Arc};
 
-use icrate::{AppKit::NSImage, Foundation::NSData};
+use icrate::{
+    AppKit::NSImage,
+    Foundation::{NSData, NSString},
+};
 use libc::c_void;
 use objc2::{rc::Id, ClassType};
 
@@ -11,9 +14,21 @@ pub enum Image {
     Static(&'static [u8]),
     Objc(Id<NSImage>),
     CopyOnPass(Arc<Vec<u8>>),
+    Named(String),
+    SystemSymbol(String),
 }
 
 impl Image {
+    /// Image from your app bundle.
+    pub fn from_app_bundle(name: &str) -> Self {
+        Self::Named(name.to_string())
+    }
+
+    /// A system symbol.
+    pub fn system_symbol(name: &str) -> Self {
+        Self::SystemSymbol(name.to_string())
+    }
+
     /// Image data is never copied.
     pub fn from_bytes_no_copy(bytes: &'static [u8]) -> Self {
         Self::Static(bytes)
@@ -62,6 +77,16 @@ impl Image {
                 let data = NSData::with_bytes(&bytes);
                 let alloc = NSImage::alloc();
                 NSImage::initWithData(alloc, &data).unwrap()
+            },
+            Image::Named(name) => unsafe {
+                let name = NSString::from_str(name);
+                NSImage::imageNamed(&name)
+                    .expect(&format!("Image with name '{}' is not found", name))
+            },
+            Image::SystemSymbol(name) => unsafe {
+                let name = NSString::from_str(name);
+                NSImage::imageWithSystemSymbolName_accessibilityDescription(&name, None)
+                    .expect(&format!("System symbol '{}' does not exist", name))
             },
         }
     }
