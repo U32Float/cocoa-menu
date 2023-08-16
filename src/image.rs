@@ -19,6 +19,8 @@ impl Image {
         Self::Static(bytes)
     }
 
+    /// Image data is shared between copies.
+    ///
     /// # Warning
     /// This should be used inside an objective-c autorelease pool, otherwise it could leak memory.
     ///
