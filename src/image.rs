@@ -1,31 +1,49 @@
-use objc::runtime::Object;
-use objc::sel_impl;
-use objc::{class, msg_send};
-use objc_id::{Id, Shared};
+use std::ptr::NonNull;
 
-use crate::id;
+use icrate::{AppKit::NSImage, Foundation::NSData};
+use libc::c_void;
+use objc2::{rc::Id, ClassType};
 
 // ----------------------------------------------------------------------------
 
 #[derive(Clone)]
-pub struct Image(pub(crate) Id<Object, Shared>);
+pub enum Image {
+    Static(&'static [u8]),
+    Unsafe(Id<NSImage>),
+}
 
 impl Image {
-    pub fn from_raw(bytes: &[u8]) -> Self {
-        let cls = class!(NSData);
-        let data: id = unsafe {
-            let obj: id = msg_send![cls, alloc];
-            let obj: id = msg_send![obj, initWithBytes:bytes.as_ptr()
-                                                       length:bytes.len()];
-            obj
-        };
-        let obj: Id<Object, Shared> = unsafe {
-            let alloc: id = msg_send![class!(NSImage), alloc];
-            let obj = Id::from_retained_ptr(msg_send![alloc, initWithData: data]);
-            let _: () = msg_send![data, release];
-            obj
-        };
+    pub fn from_bytes_no_copy(bytes: &'static [u8]) -> Self {
+        Self::Static(bytes)
+    }
 
-        Self(obj)
+    /// # Warning
+    /// If this is not used inside an objective-c autorelease pool, it could leak memory.
+    pub unsafe fn from_bytes_copy(bytes: &[u8]) -> Self {
+        let data = NSData::with_bytes(bytes);
+
+        let obj = unsafe {
+            let alloc = NSImage::alloc();
+            NSImage::initWithData(alloc, &data)
+        }
+        .unwrap();
+
+        Self::Unsafe(obj)
+    }
+
+    pub(crate) fn to_objc(&self) -> Id<NSImage> {
+        match self {
+            Image::Static(bytes) => unsafe {
+                let ptr = *bytes as *const [u8];
+                let ptr: NonNull<c_void> = NonNull::new_unchecked(ptr as *mut c_void);
+                let alloc = NSData::alloc();
+                let data =
+                    NSData::initWithBytesNoCopy_length_freeWhenDone(alloc, ptr, bytes.len(), false);
+
+                let alloc = NSImage::alloc();
+                NSImage::initWithData(alloc, &data).unwrap()
+            },
+            Image::Unsafe(obj) => obj.clone(),
+        }
     }
 }

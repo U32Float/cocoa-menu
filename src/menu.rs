@@ -1,11 +1,9 @@
-use objc::runtime::NO;
-use objc::sel_impl;
-use objc::{class, msg_send, runtime::Object};
-use objc_foundation::{INSString, NSString};
-use objc_id::Id;
+use icrate::AppKit::{NSEvent, NSMenu};
+use icrate::Foundation::{CGFloat, CGPoint, NSString};
+use objc2::rc::{autoreleasepool, Id};
+use objc2::ClassType;
 
 use crate::item::MenuItem;
-use crate::{autorelease, id, nil, CGPoint};
 
 // ----------------------------------------------------------------------------
 
@@ -32,44 +30,36 @@ impl Menu {
             self.add_item(item);
         }
     }
+
     /// Shows a popup of this menu at the current mouse position.
     pub fn show_popup(&self) {
-        let pos: CGPoint = unsafe { msg_send![class!(NSEvent), mouseLocation] };
+        let pos = unsafe { NSEvent::mouseLocation() };
         self.show_popup_at([pos.x as u32, pos.y as u32]);
     }
 
     /// Shows a popup of this menu at the given position.
     pub fn show_popup_at(&self, position: [u32; 2]) {
-        let point = CGPoint {
-            x: position[0] as f64,
-            y: position[1] as f64,
-        };
+        let point = CGPoint::new(position[0] as CGFloat, position[1] as CGFloat);
         unsafe {
-            autorelease(|| {
+            autoreleasepool(|_| {
                 let menu = self.to_objc();
-                let _: () =
-                    msg_send![menu, popUpMenuPositioningItem:nil atLocation:point inView:nil];
-            })
+                menu.popUpMenuPositioningItem_atLocation_inView(None, point, None);
+            });
         }
     }
 
-    pub(crate) fn to_objc(&self) -> Id<Object> {
-        let menu_cls = class!(NSMenu);
-
+    pub(crate) fn to_objc(&self) -> Id<NSMenu> {
         unsafe {
-            let menu: id = {
-                let alloc: id = msg_send![menu_cls, alloc];
-                let title = NSString::from_str(&self.title);
-                msg_send![alloc, initWithTitle:&*title]
-            };
-            let _: () = msg_send![menu, setAutoenablesItems: NO];
+            let alloc = NSMenu::alloc();
+            let title = NSString::from_str(&self.title);
+            let menu = NSMenu::initWithTitle(alloc, &title);
+            menu.setAutoenablesItems(false);
 
             for item in self.items.iter() {
-                let objc = item.to_objc();
-                let _: () = msg_send![menu, addItem:&*objc];
+                menu.addItem(&item.to_objc());
             }
 
-            Id::from_retained_ptr(menu)
+            menu
         }
     }
 }

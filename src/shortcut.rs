@@ -1,5 +1,9 @@
 #![allow(dead_code)]
 
+use objc2::ffi::NSUInteger;
+
+// ----------------------------------------------------------------------------
+
 #[derive(Debug, Clone)]
 pub enum Key {
     A,
@@ -157,7 +161,7 @@ impl Shortcut {
         Self { command, ..self }
     }
 
-    pub(crate) fn mask(&self) -> crate::NSUInteger {
+    pub(crate) fn mask(&self) -> NSUInteger {
         let mut mask = 0;
 
         if self.capslock {
