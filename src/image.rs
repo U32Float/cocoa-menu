@@ -1,4 +1,4 @@
-use std::ptr::NonNull;
+use std::{ptr::NonNull, sync::Arc};
 
 use icrate::{AppKit::NSImage, Foundation::NSData};
 use libc::c_void;
@@ -9,17 +9,21 @@ use objc2::{rc::Id, ClassType};
 #[derive(Clone)]
 pub enum Image {
     Static(&'static [u8]),
-    Unsafe(Id<NSImage>),
+    Objc(Id<NSImage>),
+    CopyOnPass(Arc<Vec<u8>>),
 }
 
 impl Image {
+    /// Image data is never copied.
     pub fn from_bytes_no_copy(bytes: &'static [u8]) -> Self {
         Self::Static(bytes)
     }
 
     /// # Warning
-    /// If this is not used inside an objective-c autorelease pool, it could leak memory.
-    pub unsafe fn from_bytes_copy(bytes: &[u8]) -> Self {
+    /// This should be used inside an objective-c autorelease pool, otherwise it could leak memory.
+    ///
+    /// If not, use `Self::from_bytes_copy_on_pass(..)` instead.
+    pub unsafe fn from_bytes(bytes: &[u8]) -> Self {
         let data = NSData::with_bytes(bytes);
 
         let obj = unsafe {
@@ -28,7 +32,15 @@ impl Image {
         }
         .unwrap();
 
-        Self::Unsafe(obj)
+        Self::Objc(obj)
+    }
+
+    /// The image data is shared between each copy. But on passing `Self` to a `Menu` the data does get
+    /// copied however.
+    ///
+    /// Unlike `Self::from_bytes(..)` there's no need for an autorelease pool.
+    pub fn from_bytes_copy_on_pass(bytes: &[u8]) -> Self {
+        Self::CopyOnPass(Arc::new(bytes.to_vec()))
     }
 
     pub(crate) fn to_objc(&self) -> Id<NSImage> {
@@ -43,7 +55,12 @@ impl Image {
                 let alloc = NSImage::alloc();
                 NSImage::initWithData(alloc, &data).unwrap()
             },
-            Image::Unsafe(obj) => obj.clone(),
+            Image::Objc(obj) => obj.clone(),
+            Image::CopyOnPass(bytes) => unsafe {
+                let data = NSData::with_bytes(&bytes);
+                let alloc = NSImage::alloc();
+                NSImage::initWithData(alloc, &data).unwrap()
+            },
         }
     }
 }
