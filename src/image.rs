@@ -30,7 +30,7 @@ impl Image {
     }
 
     /// Image data is never copied.
-    pub fn from_bytes_no_copy(bytes: &'static [u8]) -> Self {
+    pub fn from_bytes_static(bytes: &'static [u8]) -> Self {
         Self::Static(bytes)
     }
 
@@ -53,7 +53,7 @@ impl Image {
     }
 
     /// The image data is shared between each copy. But on passing `Self` to a `Menu` the data does get
-    /// copied however.
+    /// copied.
     ///
     /// Unlike `Self::from_bytes(..)` there's no need for an autorelease pool.
     pub fn from_bytes_copy_on_pass(bytes: &[u8]) -> Self {
