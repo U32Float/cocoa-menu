@@ -13,7 +13,7 @@ use objc2::{rc::Id, ClassType};
 pub enum Image {
     Static(&'static [u8]),
     Objc(Id<NSImage>),
-    CopyOnPass(Arc<Vec<u8>>),
+    CopyOnPass(Arc<[u8]>),
     Named(String),
     SystemSymbol(String),
 }
@@ -57,7 +57,7 @@ impl Image {
     ///
     /// Unlike `Self::from_bytes(..)` there's no need for an autorelease pool.
     pub fn from_bytes_copy_on_pass(bytes: &[u8]) -> Self {
-        Self::CopyOnPass(Arc::new(bytes.to_vec()))
+        Self::CopyOnPass(bytes.into())
     }
 
     pub(crate) fn to_objc(&self) -> Id<NSImage> {
