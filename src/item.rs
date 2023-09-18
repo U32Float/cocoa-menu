@@ -125,16 +125,16 @@ impl MenuItem {
                 item.setHidden(true);
             }
             if let Some(ref img) = self.image {
-                item.setOnStateImage(Some(&img.to_objc()));
+                item.setImage(Some(&img.to_objc()));
             }
             if let Some(ref img_on) = self.image_on {
                 item.setOnStateImage(Some(&img_on.to_objc()));
             }
             if let Some(ref img_off) = self.image_off {
-                item.setOnStateImage(Some(&img_off.to_objc()));
+                item.setOffStateImage(Some(&img_off.to_objc()));
             }
             if let Some(ref img_mixed) = self.image_mixed {
-                item.setOnStateImage(Some(&img_mixed.to_objc()));
+                item.setMixedStateImage(Some(&img_mixed.to_objc()));
             }
         }
 
